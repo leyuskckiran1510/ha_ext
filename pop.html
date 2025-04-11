@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Summary</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup-slide">
+    <div class="container">
+      <h1>📄 Page Summary</h1>
+
+      <section>
+        <h2>Summary</h2>
+        <p id="summary">Loading summary...</p>
+      </section>
+
+      <section>
+        <h2>📝 Notes</h2>
+        <ul id="notes">
+          <li>Loading notes...</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>🔗 References</h2>
+        <ul id="references">
+          <li>Loading references...</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>⏱️ Activity Time</h2>
+        <p>Active: <span id="active-time">0s</span></p>
+        <p>In Background: <span id="background-time">0s</span></p>
+      </section>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
