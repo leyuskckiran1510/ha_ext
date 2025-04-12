@@ -1,62 +1,40 @@
 let activeStartTime = null;
 let backgroundStartTime = null;
 
+let activeTime = 0;
+let backgroundTime = 0;
+
 const pageKey = window.location.href;
 
-const summmary_sample = {
-    "activeTime": 31,
-    "backgroundTime": 29,
-    "notes": [],
-    "references": [],
-    "summary": ""
+function startActiveTimer() {
+    if (!activeStartTime) activeStartTime = Date.now();
 }
 
-async function getStoredData() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([pageKey], (result) => {
-            resolve(result[pageKey] || {
-                "activeTime": 0,
-                "backgroundTime": 0,
-                "notes": [],
-                "references": [],
-                "summary": ""
-            });
-        });
-    });
+function stopActiveTimer() {
+    if (activeStartTime) {
+        activeTime += (Date.now() - activeStartTime) / 1000;
+        activeStartTime = null;
+    }
 }
 
-async function updateDuration(type, duration) {
-    const data = await getStoredData();
-    data[type] = (data[type] || 0) + duration;
+function startBackgroundTimer() {
+    if (!backgroundStartTime) backgroundStartTime = Date.now();
+}
 
-    chrome.storage.local.set({
-        [pageKey]: data
-    });
-    document.querySelector(".recall_ai_time_box")
-        .innerHTML = `
-      <h3>⏱ Activity Time</h3>
-             <p>🟢 Active: ${data['activeTime']}</p>
-             <p>⚫️ Background: ${data['activeTime']}</p>
-    `;
+function stopBackgroundTimer() {
+    if (backgroundStartTime) {
+        backgroundTime += (Date.now() - backgroundStartTime) / 1000;
+        backgroundStartTime = null;
+    }
 }
 
 function onVisibilityChange() {
-    const now = Date.now();
-
     if (document.visibilityState === 'visible' && document.hasFocus()) {
-        if (backgroundStartTime !== null) {
-            const backgroundTime = (now - backgroundStartTime) / 1000;
-            updateDuration('backgroundTime', Math.round(backgroundTime));
-            backgroundStartTime = null;
-        }
-        activeStartTime = now;
+        stopBackgroundTimer();
+        startActiveTimer();
     } else {
-        if (activeStartTime !== null) {
-            const activeTime = (now - activeStartTime) / 1000;
-            updateDuration('activeTime', Math.round(activeTime));
-            activeStartTime = null;
-        }
-        backgroundStartTime = now;
+        stopActiveTimer();
+        startBackgroundTimer();
     }
 }
 
@@ -64,20 +42,48 @@ window.addEventListener('visibilitychange', onVisibilityChange);
 window.addEventListener('focus', onVisibilityChange);
 window.addEventListener('blur', onVisibilityChange);
 
-// Save time on unload
-window.addEventListener('beforeunload', () => {
-    const now = Date.now();
-    if (activeStartTime !== null) {
-        const activeTime = (now - activeStartTime) / 1000;
-        updateDuration('activeTime', Math.round(activeTime));
-    } else if (backgroundStartTime !== null) {
-        const backgroundTime = (now - backgroundStartTime) / 1000;
-        updateDuration('backgroundTime', Math.round(backgroundTime));
+setInterval(() => {
+    stopActiveTimer();
+    stopBackgroundTimer();
+
+    if (activeTime > 0 || backgroundTime > 0) {
+        if(!chrome.storage.local) return;
+        chrome.storage.local.get([pageKey], (result) => {
+            const previous = result[pageKey] || {
+                activeTime: 0,
+                backgroundTime: 0
+            };
+            const updated = {
+                ...previous,
+                activeTime: Math.round(previous.activeTime + activeTime),
+                backgroundTime: Math.round(previous.backgroundTime + backgroundTime),
+            };
+
+            chrome.storage.local.set({
+                [pageKey]: updated
+            });
+            const __timebox = document.querySelector(".recall_ai_time_box");
+            if(__timebox){
+
+                __timebox.innerHTML = `
+      <h3>⏱ Activity Time</h3>
+             <p>🟢 Active: ${new Date(updated['activeTime'] * 1000).toISOString().slice(11, 19)} hrs</p>
+             <p>⚫️ Background: ${new Date(updated['backgroundTime'] * 1000).toISOString().slice(11, 19)} hrs</p>
+    `;
+            }
+
+            // Reset in-memory counters
+            activeTime = 0;
+            backgroundTime = 0;
+        });
     }
-});
+
+    // restart current state timer
+    onVisibilityChange();
+}, 1000);
 
 
-
+recall_graph_code_base=()=>{
 // Configuration
 const config = {
     nodeSize: {
@@ -113,6 +119,8 @@ const sampleData = {
     }
 };
 
+
+
 // Graph state
 let nodes = [];
 let links = [];
@@ -134,8 +142,7 @@ let viewOffset = {
     x: 0,
     y: 0
 };
-let zoomLevel = 1;
-let tooltip = document.getElementById('tooltip');
+let zoomLevel = 0.9;
 let draggingNode = null;
 
 // Initialize graph
@@ -379,17 +386,6 @@ function closeModal() {
     modal.classList.remove('active');
 }
 
-// Update tooltip position and content
-function updateTooltip(x, y, content) {
-    tooltip.style.left = `${x + 15}px`;
-    tooltip.style.top = `${y + 15}px`;
-    tooltip.textContent = content;
-    tooltip.style.opacity = 1;
-}
-
-function hideTooltip() {
-    tooltip.style.opacity = 0;
-}
 
 // Draw a node
 function drawNode(node, timestamp) {
@@ -673,13 +669,9 @@ function setupEventHandlers() {
         if (node) {
             canvas.style.cursor = 'pointer';
             hoveredNode = node;
-
-            // Show tooltip
-            updateTooltip(e.clientX, e.clientY, node.label);
         } else {
             canvas.style.cursor = isDragging || isPanning ? 'grabbing' : 'default';
             hoveredNode = null;
-            hideTooltip();
         }
 
         // Handle dragging for panning
@@ -713,9 +705,6 @@ function setupEventHandlers() {
         if (node) {
             selectedNode = node;
             toggleNode(node);
-
-            // Zoom to active node area
-            // zoomToNode(node);
         } else {
             selectedNode = null;
         }
@@ -751,7 +740,6 @@ function setupEventHandlers() {
         isPanning = false;
         draggingNode = null;
         hoveredNode = null;
-        hideTooltip();
     });
 
     // Prevent context menu
@@ -833,14 +821,42 @@ function setupCanvas() {
     canvasHeight = canvas.height;
     //
     // Center view
-    viewOffset.x = 200 - canvasWidth;
+    viewOffset.x = 0;
     viewOffset.y = 0;
 }
 
 // Initialize everything
-function init(nodeJson) {
+function recall_init_graph() {
+const sample = {
+        "2025-04-10": {
+            "youtube.com": {
+                "https://youtube.com/watch?v=abc": "Qm123...",
+                "https://youtube.com/watch?v=def": "Qm456..."
+            },
+            "awdwad.com": {}
+        },
+        "2025-04-09": {
+            "example.com": {
+                "https://example.com/article": "Qm789..."
+            }
+        }
+    };
+    const nodeJson = sample;  
     setupCanvas();
     initializeGraph(nodeJson);
     setupEventHandlers();
     requestAnimationFrame(render);
 }
+recall_init_graph()
+}
+
+recall_ai_looper = ()=>{
+    const canvas = document.querySelector("#recall_ai_graph_canvas");
+      if (!canvas) {
+        setTimeout(()=>{recall_ai_looper()},300);
+        return;
+      }
+      recall_graph_code_base();
+}
+
+recall_ai_looper();

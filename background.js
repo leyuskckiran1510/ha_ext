@@ -186,48 +186,47 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
             });
         }
 
-        const disableAction = document.createElement("button");
-        disableAction.style.cssText = `
-   flex: 1;
-   background: #444;
-   color: white;
-   border: none;
-   border-radius: 20px;
-   padding: 10px;
-   cursor: pointer;
-  `;
+  //       const disableAction = document.createElement("button");
+  //       disableAction.style.cssText = `
+  //  flex: 1;
+  //  background: #444;
+  //  color: white;
+  //  border: none;
+  //  border-radius: 20px;
+  //  padding: 10px;
+  //  cursor: pointer;
+  // `;
 
-        let site_is_disabled = false;
-        disableAction.innerText = "Disable";
-        let disable_func = (update) => {
-            chrome.storage.sync.get({
-                disabled_sites: []
-            }, (result) => {
-                const updatedList = result.disabled_sites;
-                console.log(updatedList)
-                if (!updatedList.includes(fullUrl) && update) {
-                    updatedList.push(fullUrl);
-                    chrome.storage.sync.set({
-                        disabled_sites: updatedList
-                    }, () => {
-                        disableAction.innerText = "Enable";
-                        site_is_disabled = true;
-                    });
-                } else if (updatedList.includes(fullUrl) && update) {
-                    updatedList.pop(updatedList.indexOf(fullUrl));
-                    disableAction.innerText = "Disable";
-                    site_is_disabled = false;
-                } else if (updatedList.includes(fullUrl)) {
-                    disableAction.innerText = "Enable";
-                    site_is_disabled = true;
-                }
-            });
-        }
+  //       let site_is_disabled = false;
+  //       disableAction.innerText = "Disable";
+  //       let disable_func = (update) => {
+  //           chrome.storage.sync.get({
+  //               disabled_sites: []
+  //           }, (result) => {
+  //               const updatedList = result.disabled_sites;
+  //               if (!updatedList.includes(fullUrl) && update) {
+  //                   updatedList.push(fullUrl);
+  //                   chrome.storage.sync.set({
+  //                       disabled_sites: updatedList
+  //                   }, () => {
+  //                       disableAction.innerText = "Enable";
+  //                       site_is_disabled = true;
+  //                   });
+  //               } else if (updatedList.includes(fullUrl) && update) {
+  //                   updatedList.pop(updatedList.indexOf(fullUrl));
+  //                   disableAction.innerText = "Disable";
+  //                   site_is_disabled = false;
+  //               } else if (updatedList.includes(fullUrl)) {
+  //                   disableAction.innerText = "Enable";
+  //                   site_is_disabled = true;
+  //               }
+  //           });
+  //       }
 
-        disable_func(0);
-        disableAction.onclick = () => {
-            disable_func(1);
-        };
+  //       disable_func(0);
+  //       disableAction.onclick = () => {
+  //           disable_func(1);
+  //       };
 
         const mindAction = document.createElement("button");
         mindAction.style.cssText = `
@@ -248,7 +247,7 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
             position: fixed;
             top: 0vh;
             right: 0vw;
-            width: max(25vw,350px);
+            width: 90vw;
             height: 90vh;
             background: linear-gradient(135deg, #1a1a1a, #222);
             color: #e0e0e0;
@@ -269,8 +268,17 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
           `;
           //  <canvas id="graph-canvas"></canvas>
           const title_div  = document.createElement("div");
+          title_div.style.cssText =`
+    display: flex;
+    flex-direction: row;
+`;
           const title  = document.createElement("div");
           title.innerText = "Mind Map"; 
+          title.style.cssText=`
+    flex: 1;
+    font-size: 20px;
+    font-weight: bold;
+`;
           const closeBtn = document.createElement("button");
             closeBtn.innerText = "✖";
             closeBtn.style.cssText = `
@@ -286,14 +294,48 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
           title_div.appendChild(closeBtn)
           mapDiv.appendChild(title_div)
           const canvas = document.createElement("canvas");
+          canvas.style.cssText=`
+            flex: 1;
+            border: 1px solid #242222;
+          `;
           canvas.id = "recall_ai_graph_canvas";
+
+          const random_div = document.createElement("div")
+          random_div.style.cssText = `
+            height:0px;
+            width:0px;
+            display:none;
+          `;
+          random_div.innerHTML = `
+             <div class="container">
+        <div class="header">
+            <h1>Futuristic Graph Visualization</h1>
+            <div class="zoom-controls">
+                <button id="zoom-in">Zoom In</button>
+                <button id="zoom-out">Zoom Out</button>
+                <button id="reset-zoom">Reset</button>
+            </div>
+        </div>
+        </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modal-header">Content ID</div>
+            <div class="modal-body" id="modal-body">Details will appear here.</div>
+        </div>
+        <button class="close-btn" id="close-modal">Close</button>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+          `;
+          mapDiv.appendChild(random_div);
           mapDiv.appendChild(canvas);
           document.body.appendChild(mapDiv);
-     
+        
         }
 
         actionButtons.appendChild(discradAction);
-        actionButtons.appendChild(disableAction);
+        // actionButtons.appendChild(disableAction);
         actionButtons.appendChild(mindAction);
 
 
