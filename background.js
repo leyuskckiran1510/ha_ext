@@ -101,13 +101,13 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
 
   loader.style.cssText = `
     position: fixed;
-    top: 2vh;
-    right: 2vw;
-    width: 25vw;
-    height: 80vh;
+    top: 0vh;
+    right: 0vw;
+    width: max(25vw,350px);
+    height: 90vh;
     background: linear-gradient(135deg, #1a1a1a, #222);
     color: #e0e0e0;
-    padding: 20px;
+    padding: 15px;
     font-family: 'Segoe UI', sans-serif;
     font-size: 14px;
     overflow-y: auto;
@@ -134,7 +134,9 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
   const controls = document.createElement("div");
   controls.style.cssText = `
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    border: 1px solid #80808033;
+    padding: 5px;
   `;
 
   const closeBtn = document.createElement("button");
@@ -145,6 +147,8 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
   `;
   closeBtn.onclick = () => loader.remove();
 
+
+
   const expandBtn = document.createElement("button");
   expandBtn.innerText = "⛶";
   expandBtn.style.cssText = closeBtn.style.cssText;
@@ -152,14 +156,171 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
   expandBtn.onclick = () => {
     expanded = !expanded;
     loader.style.width = expanded ? "80vw" : "25vw";
+    expandBtn.innerText = expanded ? "🗗" : "🗖";
   };
 
-  controls.appendChild(closeBtn);
+  const premiumBtn = document.createElement("button");
+  premiumBtn.className = "recall_ai_premium_button_no_external"
+  premiumBtn.id = "watchedDiv";
+  premiumBtn.innerText = "💎 Premium"
+  premiumBtn.style.cssText = `
+    background: linear-gradient(135deg, #ffafcc, #9d4edd);
+    color: white;
+    font-weight: bold;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 30px;
+    box-shadow: 0 4px 12px rgba(157, 78, 221, 0.4);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  `
+    const premium_style = document.createElement("style");
+    premium_style.innerHTML = `
+      .recall_ai_premium_button_no_external:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(157, 78, 221, 0.6);
+      }
+      .recall_ai_premium_button_no_external:active {
+        transform: scale(0.98);
+        box-shadow: 0 2px 6px rgba(157, 78, 221, 0.3);
+      }
+      // .recall_ai_premium_button_no_external.__oov{
+      //   position:sitcky;
+      //   top:0px;
+      //   width:100%;
+      // }
+    `;
+    document.head.appendChild(premium_style);
+
+    const app_name = document.createElement("div");
+    app_name.innerText = "Echo Me";
+    app_name.style.cssText = `
+    flex: 1;
+    align-self: anchor-center;
+    font-weight: bold;
+    font-size: 1.8rem;
+    padding-left: 0.5rem;
+    text-decoration-line: grammar-error;
+    `;
+
+  controls.appendChild(app_name);
+  controls.appendChild(premiumBtn);
+  controls.appendChild(premium_style);
   controls.appendChild(expandBtn);
+  controls.appendChild(closeBtn);
+
+
+  const actionButtons = document.createElement("div");
+  actionButtons.style.cssText=`
+      position: -webkit-sticky;
+      position: sticky;
+      bottom: 0px;
+      background: #1e1e1eed;
+      padding-bottom: 0.5rem;
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(128,128,128,0.2);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+  `
+  const discradAction  = document.createElement("button");
+  discradAction.style.cssText =`
+    flex: 1;
+   background: #444;
+   color: white;
+   border: none;
+   border-radius: 20px;
+   padding: 10px;
+   cursor: pointer;
+  
+  `;
+  discradAction.innerText = "Discard";
+  discradAction.onclick=()=>{
+    chrome.storage.local.remove(fullUrl,()=>{});
+    loader.remove();
+
+    fetch(`${BACKEND_URL}/discard`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${jwt}`
+      },
+      body: JSON.stringify({ of : fullUrl })
+    });
+
+
+
+
+
+  }
+
+  const disableAction  = document.createElement("button");
+  disableAction.style.cssText =`
+   flex: 1;
+   background: #444;
+   color: white;
+   border: none;
+   border-radius: 20px;
+   padding: 10px;
+   cursor: pointer;
+  `;
+
+  let site_is_disabled = false;
+
+  disableAction.innerText = "Disable";
+  let disable_func = (update)=>{
+    chrome.storage.sync.get({ disabled_sites: [] }, (result) => {
+    const updatedList = result.disabled_sites;
+    if (!updatedList.includes(fullUrl) && update) {
+      updatedList.push(fullUrl);
+      chrome.storage.sync.set({ disabled_sites: updatedList }, () => {
+        disableAction.innerText = "Enable";
+        site_is_disabled=true;
+      });
+    } 
+    else if (updatedList.includes(fullUrl) && update) {
+      updatedList.pop(updatedList.indexOf(fullUrl));
+      disableAction.innerText = "Disable";
+      site_is_disabled=false;
+    } 
+    else if(updatedList.includes(fullUrl)) {
+      disableAction.innerText = "Enable";
+        site_is_disabled=true;
+    }
+   });
+  }
+
+  disable_func(0);
+  disableAction.onclick = () => {
+      disable_func(1);
+  };
+
+  const mindAction  = document.createElement("button");
+  mindAction.style.cssText =`
+    flex: 1;
+   background: #444;
+   color: white;
+   border: none;
+   border-radius: 20px;
+   padding: 10px;
+   cursor: pointer;
+  
+  `;
+  mindAction.innerText = "Mind Map"
+
+  actionButtons.appendChild(discradAction);
+  actionButtons.appendChild(disableAction);
+  actionButtons.appendChild(mindAction);
+
+
+
   loader.appendChild(controls);
 
   // If there's no cached data, show a skeleton UI
-  if (!cached) {
+  if (!cached || site_is_disabled) {
     const skeleton = document.createElement("div");
     skeleton.innerHTML = `
       <div style="background:#333;height:20px;width:50%;margin-bottom:15px;border-radius:5px;animation:pulse 1.5s infinite;"></div>
@@ -178,7 +339,9 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
     `;
     document.head.appendChild(pulseStyle);
     loader.appendChild(skeleton);
-    return;
+
+    loader.appendChild(actionButtons);
+    return site_is_disabled?-1:0;
   }
 
   // --- Below: normal rendering when cached exists ---
@@ -202,6 +365,9 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
   (cached.notes || []).forEach(note => {
     const li = document.createElement("li");
     li.innerText = note;
+    li.style.cssText = `
+    list-style: disc;
+    margin-left: 1rem;`;
     notesList.appendChild(li);
   });
   loader.appendChild(notesList);
@@ -218,6 +384,10 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
     a.target = "_blank";
     a.innerText = ref.name;
     a.style.color = "#4ea1ff";
+
+    li.style.cssText = `
+    list-style: disc;
+    margin-left: 1rem;`;
     li.appendChild(a);
     refList.appendChild(li);
   });
@@ -229,8 +399,8 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
   const background = cached.backgroundTime ? `${cached.backgroundTime} sec` : "N/A";
   timeBox.innerHTML = `
     <h3>⏱ Activity Time</h3>
-    <p>🟢 Active: ${active}</p>
-    <p>⚫️ Background: ${background}</p>
+     <p>🟢 Active: ${active}</p>
+     <p>⚫️ Background: ${background}</p>
   `;
   loader.appendChild(timeBox);
 
@@ -241,6 +411,25 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
   notesList.style.fontSize = "13px";
   refList.style.fontSize = "13px";
   timeBox.style.fontSize = "13px";
+
+
+  loader.appendChild(actionButtons);
+
+    const target = document.getElementById('watchedDiv');
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          target.classList.add('__oov');
+        } else {
+          target.classList.remove('__oov');
+        }
+      },
+      { threshold: 0.5 } // Trigger when at least 10% is not visible
+    );
+
+    observer.observe(target);
+    return 1;
 }
 
   var text = document.body.innerText;
@@ -254,18 +443,20 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
     __elms.forEach(x=>x.outerHTML="");
     return;
 };
-
+    
+    let site_is_disabled = false;
   // Show loading UI
   const loader = document.createElement("div");
   loader.className = "quantum-summary-panel";
-  render_summary(loader,null);
+  site_is_disabled =  render_summary(loader,null)<0;
 
   document.body.appendChild(loader);
+  if(site_is_disabled)return;
   chrome.storage.local.get(fullUrl, (data) => {
     const cached = data[fullUrl];
 
     if (cached) {
-        render_summary(loader,cached)
+        site_is_disabled =  render_summary(loader,cached)<0;
       return;
     }
     // No cached summary, fetch it
