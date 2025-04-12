@@ -1,105 +1,42 @@
 import {
-    BACKEND_URL,SPECIAL_DOMAINS
+    BACKEND_URL,
+    SPECIAL_DOMAINS
 } from "./constants.js";
 
-function authenticate(deviceId){
-  fetch(`${BACKEND_URL}/authenticate_or_identify`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ hash: deviceId })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.access_token) {
-      chrome.storage.sync.set({ access_token: data.access_token }, () => {
-        console.log("Token stored.");
-      });
-    } else {
-      console.error("No token received:", data);
-    }
-  })
-  .catch(error => {
-    console.error("Auth request failed:", error);
-  });
+function authenticate(deviceId) {
+    fetch(`${BACKEND_URL}/authenticate_or_identify`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                hash: deviceId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.access_token) {
+                chrome.storage.sync.set({
+                    access_token: data.access_token
+                }, () => {
+                    console.log("Token stored.");
+                });
+            } else {
+                console.error("No token received:", data);
+            }
+        })
+        .catch(error => {
+            console.error("Auth request failed:", error);
+        });
 }
 
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.get(['device_id'], (result) => {
-    if (!result.device_id) {
-      const id = crypto.randomUUID();
-      chrome.storage.sync.set({ device_id: id }, () => {
-        console.log("New synced device_id:", id);
-      });
+function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
+    function render_summary(loader, cached) {
+        
+        loader.innerHTML = "";
 
-    } else {
-      console.log("Restored synced device_id:", result.device_id);
-    }
-    authenticate(result.device_id);
-  });
-});
-
-
-chrome.action.onClicked.addListener((tab) => {
-  if (tab.id) {
-    // Get token first
-    chrome.storage.sync.get("access_token", (result) => {
-      const token = result.access_token;
-      if (!token) return console.warn("No token found");
-
-      // Inject the summarization logic into the tab
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: summarizeInPage,
-        args: [BACKEND_URL, token,SPECIAL_DOMAINS]
-      });
-    });
-  }
-});
-
-
-function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
-    function getImageBeforeSummary(summaryContainer) {
-  // Try to get the first image in the body
-  const firstImage = document.querySelector('body img');
-  
-  let imageUrl = '';
-  
-  // If an image is found, use its source
-  if (firstImage) {
-    imageUrl = firstImage.src;
-  } else {
-    // If no image is found, fallback to favicon
-    const favicon = document.querySelector('link[rel="icon"]');
-    if (favicon) {
-      imageUrl = favicon.href;
-    }
-  }
-  
-  // If we have an image URL, create an img element and insert it before the summary
-  if (imageUrl) {
-    const imageElement = document.createElement('img');
-    imageElement.src = imageUrl;
-    imageElement.style.cssText = `
-      width: 100%;
-      height: auto;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    `;
-    
-    if (summaryContainer) {
-      summaryContainer.insertAdjacentElement('beforebegin', imageElement);
-    }
-  }
-}
-
-
-   function render_summary(loader, cached) {
-  loader.innerHTML = "";
-
-  loader.style.cssText = `
+        loader.style.cssText = `
     position: fixed;
     top: 0vh;
     right: 0vw;
@@ -123,47 +60,47 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
     -ms-overflow-style: none;
   `;
 
-  loader.style.overflow = "auto";
-  loader.classList.add("no-scrollbar");
+        loader.style.overflow = "auto";
+        loader.classList.add("no-scrollbar");
 
-  const style = document.createElement("style");
-  style.innerHTML = `.no-scrollbar::-webkit-scrollbar { display: none; }`;
-  document.head.appendChild(style);
+        const style = document.createElement("style");
+        style.innerHTML = `.no-scrollbar::-webkit-scrollbar { display: none; }`;
+        document.head.appendChild(style);
 
-  // Common: Close + Expand
-  const controls = document.createElement("div");
-  controls.style.cssText = `
+        // Common: Close + Expand
+        const controls = document.createElement("div");
+        controls.style.cssText = `
     display: flex;
     justify-content: flex-end;
     border: 1px solid #80808033;
     padding: 5px;
   `;
 
-  const closeBtn = document.createElement("button");
-  closeBtn.innerText = "✖";
-  closeBtn.style.cssText = `
+        const closeBtn = document.createElement("button");
+        closeBtn.innerText = "✖";
+        closeBtn.style.cssText = `
     background: transparent; color: white;
     border: none; font-size: 20px; cursor: pointer;
   `;
-  closeBtn.onclick = () => loader.remove();
+        closeBtn.onclick = () => loader.remove();
 
 
 
-  const expandBtn = document.createElement("button");
-  expandBtn.innerText = "⛶";
-  expandBtn.style.cssText = closeBtn.style.cssText;
-  let expanded = false;
-  expandBtn.onclick = () => {
-    expanded = !expanded;
-    loader.style.width = expanded ? "80vw" : "25vw";
-    expandBtn.innerText = expanded ? "🗗" : "🗖";
-  };
+        const expandBtn = document.createElement("button");
+        expandBtn.innerText = "⛶";
+        expandBtn.style.cssText = closeBtn.style.cssText;
+        let expanded = false;
+        expandBtn.onclick = () => {
+            expanded = !expanded;
+            loader.style.width = expanded ? "80vw" : "25vw";
+            expandBtn.innerText = expanded ? "🗗" : "🗖";
+        };
 
-  const premiumBtn = document.createElement("button");
-  premiumBtn.className = "recall_ai_premium_button_no_external"
-  premiumBtn.id = "watchedDiv";
-  premiumBtn.innerText = "💎 Premium"
-  premiumBtn.style.cssText = `
+        const premiumBtn = document.createElement("button");
+        premiumBtn.className = "recall_ai_premium_button_no_external"
+        premiumBtn.id = "watchedDiv";
+        premiumBtn.innerText = "💎 Premium"
+        premiumBtn.style.cssText = `
     background: linear-gradient(135deg, #ffafcc, #9d4edd);
     color: white;
     font-weight: bold;
@@ -176,8 +113,8 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   `
-    const premium_style = document.createElement("style");
-    premium_style.innerHTML = `
+        const premium_style = document.createElement("style");
+        premium_style.innerHTML = `
       .recall_ai_premium_button_no_external:hover {
         transform: scale(1.05);
         box-shadow: 0 6px 20px rgba(157, 78, 221, 0.6);
@@ -192,11 +129,11 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
       //   width:100%;
       // }
     `;
-    document.head.appendChild(premium_style);
+        document.head.appendChild(premium_style);
 
-    const app_name = document.createElement("div");
-    app_name.innerText = "Echo Me";
-    app_name.style.cssText = `
+        const app_name = document.createElement("div");
+        app_name.innerText = "Echo Me";
+        app_name.style.cssText = `
     flex: 1;
     align-self: anchor-center;
     font-weight: bold;
@@ -205,15 +142,15 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
     text-decoration-line: grammar-error;
     `;
 
-  controls.appendChild(app_name);
-  controls.appendChild(premiumBtn);
-  controls.appendChild(premium_style);
-  controls.appendChild(expandBtn);
-  controls.appendChild(closeBtn);
+        controls.appendChild(app_name);
+        controls.appendChild(premiumBtn);
+        controls.appendChild(premium_style);
+        controls.appendChild(expandBtn);
+        controls.appendChild(closeBtn);
 
 
-  const actionButtons = document.createElement("div");
-  actionButtons.style.cssText=`
+        const actionButtons = document.createElement("div");
+        actionButtons.style.cssText = `
       position: -webkit-sticky;
       position: sticky;
       bottom: 0px;
@@ -226,8 +163,8 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
       justify-content: space-between;
       gap: 10px;
   `
-  const discradAction  = document.createElement("button");
-  discradAction.style.cssText =`
+        const discradAction = document.createElement("button");
+        discradAction.style.cssText = `
     flex: 1;
    background: #444;
    color: white;
@@ -237,28 +174,25 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
    cursor: pointer;
   
   `;
-  discradAction.innerText = "Discard";
-  discradAction.onclick=()=>{
-    chrome.storage.local.remove(fullUrl,()=>{});
-    loader.remove();
+        discradAction.innerText = "Discard";
+        discradAction.onclick = () => {
+            chrome.storage.local.remove(fullUrl, () => {});
+            loader.remove();
 
-    fetch(`${BACKEND_URL}/discard`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${jwt}`
-      },
-      body: JSON.stringify({ of : fullUrl })
-    });
+            fetch(`${BACKEND_URL}/discard`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${jwt}`
+                },
+                body: JSON.stringify({
+                    of: fullUrl
+                })
+            });
+        }
 
-
-
-
-
-  }
-
-  const disableAction  = document.createElement("button");
-  disableAction.style.cssText =`
+        const disableAction = document.createElement("button");
+        disableAction.style.cssText = `
    flex: 1;
    background: #444;
    color: white;
@@ -268,38 +202,40 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
    cursor: pointer;
   `;
 
-  let site_is_disabled = false;
+        let site_is_disabled = false;
 
-  disableAction.innerText = "Disable";
-  let disable_func = (update)=>{
-    chrome.storage.sync.get({ disabled_sites: [] }, (result) => {
-    const updatedList = result.disabled_sites;
-    if (!updatedList.includes(fullUrl) && update) {
-      updatedList.push(fullUrl);
-      chrome.storage.sync.set({ disabled_sites: updatedList }, () => {
-        disableAction.innerText = "Enable";
-        site_is_disabled=true;
-      });
-    } 
-    else if (updatedList.includes(fullUrl) && update) {
-      updatedList.pop(updatedList.indexOf(fullUrl));
-      disableAction.innerText = "Disable";
-      site_is_disabled=false;
-    } 
-    else if(updatedList.includes(fullUrl)) {
-      disableAction.innerText = "Enable";
-        site_is_disabled=true;
-    }
-   });
-  }
+        disableAction.innerText = "Disable";
+        let disable_func = (update) => {
+            chrome.storage.sync.get({
+                disabled_sites: []
+            }, (result) => {
+                const updatedList = result.disabled_sites;
+                if (!updatedList.includes(fullUrl) && update) {
+                    updatedList.push(fullUrl);
+                    chrome.storage.sync.set({
+                        disabled_sites: updatedList
+                    }, () => {
+                        disableAction.innerText = "Enable";
+                        site_is_disabled = true;
+                    });
+                } else if (updatedList.includes(fullUrl) && update) {
+                    updatedList.pop(updatedList.indexOf(fullUrl));
+                    disableAction.innerText = "Disable";
+                    site_is_disabled = false;
+                } else if (updatedList.includes(fullUrl)) {
+                    disableAction.innerText = "Enable";
+                    site_is_disabled = true;
+                }
+            });
+        }
 
-  disable_func(0);
-  disableAction.onclick = () => {
-      disable_func(1);
-  };
+        disable_func(0);
+        disableAction.onclick = () => {
+            disable_func(1);
+        };
 
-  const mindAction  = document.createElement("button");
-  mindAction.style.cssText =`
+        const mindAction = document.createElement("button");
+        mindAction.style.cssText = `
     flex: 1;
    background: #444;
    color: white;
@@ -309,183 +245,187 @@ function summarizeInPage(BACKEND_URL, jwt,SPECIAL_DOMAINS) {
    cursor: pointer;
   
   `;
-  mindAction.innerText = "Mind Map"
+        mindAction.innerText = "Mind Map"
 
-  actionButtons.appendChild(discradAction);
-  actionButtons.appendChild(disableAction);
-  actionButtons.appendChild(mindAction);
+        actionButtons.appendChild(discradAction);
+        actionButtons.appendChild(disableAction);
+        actionButtons.appendChild(mindAction);
 
 
 
-  loader.appendChild(controls);
+        loader.appendChild(controls);
 
-  // If there's no cached data, show a skeleton UI
-  if (!cached || site_is_disabled) {
-    const skeleton = document.createElement("div");
-    skeleton.innerHTML = `
+        // If there's no cached data, show a skeleton UI
+        if (!cached || site_is_disabled) {
+            const skeleton = document.createElement("div");
+            skeleton.innerHTML = `
       <div style="background:#333;height:20px;width:50%;margin-bottom:15px;border-radius:5px;animation:pulse 1.5s infinite;"></div>
       <div style="background:#333;height:12px;width:90%;margin-bottom:8px;border-radius:5px;animation:pulse 1.5s infinite;"></div>
       <div style="background:#333;height:12px;width:85%;margin-bottom:8px;border-radius:5px;animation:pulse 1.5s infinite;"></div>
       <div style="background:#333;height:12px;width:80%;margin-bottom:8px;border-radius:5px;animation:pulse 1.5s infinite;"></div>
       <div style="background:#333;height:12px;width:60%;margin-bottom:8px;border-radius:5px;animation:pulse 1.5s infinite;"></div>
     `;
-    const pulseStyle = document.createElement("style");
-    pulseStyle.innerHTML = `
+            const pulseStyle = document.createElement("style");
+            pulseStyle.innerHTML = `
       @keyframes pulse {
         0% { opacity: 0.6; }
         50% { opacity: 1; }
         100% { opacity: 0.6; }
       }
     `;
-    document.head.appendChild(pulseStyle);
-    loader.appendChild(skeleton);
+            document.head.appendChild(pulseStyle);
+            loader.appendChild(skeleton);
 
-    loader.appendChild(actionButtons);
-    return site_is_disabled?-1:0;
-  }
+            loader.appendChild(actionButtons);
+            return site_is_disabled ? -1 : 0;
+        }
 
-  // --- Below: normal rendering when cached exists ---
+        // --- Below: normal rendering when cached exists ---
 
-  // Title: Summary
-  const summaryTitle = document.createElement("h2");
-  summaryTitle.innerText = "📄 Summary";
-  summaryTitle.style.marginBottom = "0.5rem";
-  loader.appendChild(summaryTitle);
+        // Title: Summary
+        const summaryTitle = document.createElement("h2");
+        summaryTitle.innerText = "📄 Summary";
+        summaryTitle.style.marginBottom = "0.5rem";
+        loader.appendChild(summaryTitle);
 
-  const summaryText = document.createElement("p");
-  summaryText.innerText = cached.summary || "No summary available.";
-  getImageBeforeSummary(summaryText);
-  loader.appendChild(summaryText);
+        const summaryText = document.createElement("p");
+        summaryText.innerText = cached.summary || "No summary available.";
+        loader.appendChild(summaryText);
 
-  const notesTitle = document.createElement("h3");
-  notesTitle.innerText = "📝 Notes";
-  loader.appendChild(notesTitle);
+        const notesTitle = document.createElement("h3");
+        notesTitle.innerText = "📝 Notes";
+        loader.appendChild(notesTitle);
 
-  const notesList = document.createElement("ul");
-  (cached.notes || []).forEach(note => {
-    const li = document.createElement("li");
-    li.innerText = note;
-    li.style.cssText = `
+        const notesList = document.createElement("ul");
+        (cached.notes || []).forEach(note => {
+            const li = document.createElement("li");
+            li.innerText = note;
+            li.style.cssText = `
     list-style: disc;
     margin-left: 1rem;`;
-    notesList.appendChild(li);
-  });
-  loader.appendChild(notesList);
+            notesList.appendChild(li);
+        });
+        loader.appendChild(notesList);
 
-  const refTitle = document.createElement("h3");
-  refTitle.innerText = "🔗 References";
-  loader.appendChild(refTitle);
+        const refTitle = document.createElement("h3");
+        refTitle.innerText = "🔗 References";
+        loader.appendChild(refTitle);
 
-  const refList = document.createElement("ul");
-  (cached.references || []).forEach(ref => {
-    const li = document.createElement("li");
-    const a = document.createElement("a");
-    a.href = ref.link;
-    a.target = "_blank";
-    a.innerText = ref.name;
-    a.style.color = "#4ea1ff";
+        const refList = document.createElement("ul");
+        (cached.references || []).forEach(ref => {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = ref.link;
+            a.target = "_blank";
+            a.innerText = ref.name;
+            a.style.color = "#4ea1ff";
 
-    li.style.cssText = `
+            li.style.cssText = `
     list-style: disc;
     margin-left: 1rem;`;
-    li.appendChild(a);
-    refList.appendChild(li);
-  });
-  loader.appendChild(refList);
+            li.appendChild(a);
+            refList.appendChild(li);
+        });
+        loader.appendChild(refList);
 
-  const timeBox = document.createElement("div");
-  timeBox.style.marginTop = "1rem";
-  const active = cached.activeTime ? `${cached.activeTime} sec` : "N/A";
-  const background = cached.backgroundTime ? `${cached.backgroundTime} sec` : "N/A";
-  timeBox.innerHTML = `
+        const timeBox = document.createElement("div");
+        timeBox.style.marginTop = "1rem";
+        const active = cached.activeTime ? `${cached.activeTime} sec` : "N/A";
+        const background = cached.backgroundTime ? `${cached.backgroundTime} sec` : "N/A";
+        timeBox.innerHTML = `
     <h3>⏱ Activity Time</h3>
      <p>🟢 Active: ${active}</p>
      <p>⚫️ Background: ${background}</p>
   `;
-  loader.appendChild(timeBox);
+        loader.appendChild(timeBox);
 
-  summaryTitle.style.fontSize = "18px";
-  notesTitle.style.fontSize = "16px";
-  refTitle.style.fontSize = "16px";
-  summaryText.style.fontSize = "14px";
-  notesList.style.fontSize = "13px";
-  refList.style.fontSize = "13px";
-  timeBox.style.fontSize = "13px";
+        summaryTitle.style.fontSize = "18px";
+        notesTitle.style.fontSize = "16px";
+        refTitle.style.fontSize = "16px";
+        summaryText.style.fontSize = "14px";
+        notesList.style.fontSize = "13px";
+        refList.style.fontSize = "13px";
+        timeBox.style.fontSize = "13px";
 
 
-  loader.appendChild(actionButtons);
+        loader.appendChild(actionButtons);
 
-    const target = document.getElementById('watchedDiv');
+        const target = document.getElementById('watchedDiv');
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) {
-          target.classList.add('__oov');
-        } else {
-          target.classList.remove('__oov');
-        }
-      },
-      { threshold: 0.5 } // Trigger when at least 10% is not visible
-    );
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting) {
+                    target.classList.add('__oov');
+                } else {
+                    target.classList.remove('__oov');
+                }
+            }, {
+                threshold: 0.5
+            } // Trigger when at least 10% is not visible
+        );
 
-    observer.observe(target);
-    return 1;
-}
-
-  var text = document.body.innerText;
-  const fullUrl = window.location.href;
-  const domain = new URL(fullUrl).hostname;
-  if(SPECIAL_DOMAINS.includes(domain)){
-    text = fullUrl;
-  }
-  var __elms =document.querySelectorAll(".quantum-summary-panel"); 
-  if(__elms.length){
-    __elms.forEach(x=>x.outerHTML="");
-    return;
-};
-    
-    let site_is_disabled = false;
-  // Show loading UI
-  const loader = document.createElement("div");
-  loader.className = "quantum-summary-panel";
-  site_is_disabled =  render_summary(loader,null)<0;
-
-  document.body.appendChild(loader);
-  if(site_is_disabled)return;
-  chrome.storage.local.get(fullUrl, (data) => {
-    const cached = data[fullUrl];
-
-    if (cached) {
-        site_is_disabled =  render_summary(loader,cached)<0;
-      return;
+        observer.observe(target);
+        return 1;
     }
-    // No cached summary, fetch it
-    fetch(`${BACKEND_URL}/summarize`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${jwt}`
-      },
-      body: JSON.stringify({ content: text, url: domain, full: fullUrl })
-    })
-      .then(res => res.json())
-      .then(result => {
-        chrome.storage.local.set({ [fullUrl]: result });
-        chrome.storage.local.get(fullUrl, (data) => {
-            const cached = data[fullUrl];
-            if (cached) {
-                render_summary(loader,cached)
-              return;
-            }
-          }
-          )
-      }
-      )
-      .catch(err => {
-        loader.innerText = "❌ Error summarizing page";
-        console.error("Error summarizing:", err);
-      });
-  });
+
+    var text = document.body.innerText;
+    const fullUrl = window.location.href;
+    const domain = new URL(fullUrl).hostname;
+    if (SPECIAL_DOMAINS.includes(domain)) {
+        text = fullUrl;
+    }
+    var __elms = document.querySelectorAll(".quantum-summary-panel");
+    if (__elms.length) {
+        __elms.forEach(x => x.outerHTML = "");
+        return;
+    };
+
+    let site_is_disabled = false;
+    // Show loading UI
+    const loader = document.createElement("div");
+    loader.className = "quantum-summary-panel";
+    site_is_disabled = render_summary(loader, null) < 0;
+
+    document.body.appendChild(loader);
+    if (site_is_disabled) return;
+    chrome.storage.local.get(fullUrl, (data) => {
+        const cached = data[fullUrl];
+
+        if (cached) {
+            site_is_disabled = render_summary(loader, cached) < 0;
+            return;
+        }
+        // No cached summary, fetch it
+        fetch(`${BACKEND_URL}/summarize`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${jwt}`
+                },
+                body: JSON.stringify({
+                    content: text,
+                    url: domain,
+                    full: fullUrl
+                })
+            })
+            .then(res => res.json())
+            .then(result => {
+                chrome.storage.local.set({
+                    [fullUrl]: result
+                });
+                chrome.storage.local.get(fullUrl, (data) => {
+                    const cached = data[fullUrl];
+                    if (cached) {
+                        render_summary(loader, cached)
+                        return;
+                    }
+                })
+            })
+            .catch(err => {
+                loader.innerText = "❌ Error summarizing page";
+                console.error("Error summarizing:", err);
+            });
+    });
 }
 
 
@@ -495,58 +435,97 @@ let tabDomain = null;
 let isWindowFocused = true;
 
 function getDomainFromUrl(url) {
-  try {
-    return new URL(url).hostname;
-  } catch (e) {
-    return null;
-  }
+    try {
+        return new URL(url).hostname;
+    } catch (e) {
+        return null;
+    }
 }
 
 function updateTime(active = true) {
-  if (!tabStartTime || !tabDomain) return;
+    if (!tabStartTime || !tabDomain) return;
 
-  const timeSpent = Math.floor((Date.now() - tabStartTime) / 1000);
+    const timeSpent = Math.floor((Date.now() - tabStartTime) / 1000);
 
-  chrome.storage.local.get([tabDomain], (res) => {
-    const data = res[tabDomain] || {
-      summary: "",
-      notes: [],
-      references: [],
-      activeTime: 0,
-      backgroundTime: 0
-    };
+    chrome.storage.local.get([tabDomain], (res) => {
+        const data = res[tabDomain] || {
+            summary: "",
+            notes: [],
+            references: [],
+            activeTime: 0,
+            backgroundTime: 0
+        };
 
-    if (active) data.activeTime += timeSpent;
-    else data.backgroundTime += timeSpent;
+        if (active) data.activeTime += timeSpent;
+        else data.backgroundTime += timeSpent;
 
-    chrome.storage.local.set({ [tabDomain]: data });
-  });
+        chrome.storage.local.set({
+            [tabDomain]: data
+        });
+    });
 
-  tabStartTime = Date.now();
+    tabStartTime = Date.now();
 }
 
 // track tab change
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  updateTime(isWindowFocused); // save old tab time
-  activeTabId = activeInfo.tabId;
+    updateTime(isWindowFocused); // save old tab time
+    activeTabId = activeInfo.tabId;
 
-  const tab = await chrome.tabs.get(activeTabId);
-  tabDomain = getDomainFromUrl(tab.url);
-  tabStartTime = Date.now();
+    const tab = await chrome.tabs.get(activeTabId);
+    tabDomain = getDomainFromUrl(tab.url);
+    tabStartTime = Date.now();
 });
 
 // track tab URL change
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tabId === activeTabId && changeInfo.url) {
-    updateTime(isWindowFocused);
-    tabDomain = getDomainFromUrl(changeInfo.url);
-    tabStartTime = Date.now();
-  }
+    if (tabId === activeTabId && changeInfo.url) {
+        updateTime(isWindowFocused);
+        tabDomain = getDomainFromUrl(changeInfo.url);
+        tabStartTime = Date.now();
+    }
 });
 
 // track window focus/blur
 chrome.windows.onFocusChanged.addListener((windowId) => {
-  const wasFocused = isWindowFocused;
-  isWindowFocused = windowId !== chrome.windows.WINDOW_ID_NONE;
-  if (tabStartTime) updateTime(wasFocused);
+    const wasFocused = isWindowFocused;
+    isWindowFocused = windowId !== chrome.windows.WINDOW_ID_NONE;
+    if (tabStartTime) updateTime(wasFocused);
 });
+
+
+
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.sync.get(['device_id'], (result) => {
+        if (!result.device_id) {
+            const id = crypto.randomUUID();
+            chrome.storage.sync.set({
+                device_id: id
+            }, () => {
+                console.log("New synced device_id:", id);
+            });
+
+        } else {
+            console.log("Restored synced device_id:", result.device_id);
+        }
+        authenticate(result.device_id);
+    });
+});
+
+
+chrome.action.onClicked.addListener((tab) => {
+    if (tab.id) {
+        chrome.storage.sync.get("access_token", (result) => {
+            const token = result.access_token;
+            if (!token) return console.warn("No token found");
+            chrome.scripting.executeScript({
+                target: {
+                    tabId: tab.id
+                },
+                func: summarizeInPage,
+                args: [BACKEND_URL, token, SPECIAL_DOMAINS]
+            });
+        });
+    }
+});
+
