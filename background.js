@@ -484,7 +484,8 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
     chrome.storage.local.get(fullUrl, (data) => {
         const cached = data[fullUrl];
 
-        if (cached) {
+        if (cached && cached.summary && cached.summary.length>0) {
+            console.log(cached)
             site_is_disabled = render_summary(loader, cached) < 0;
             return;
         }
@@ -503,8 +504,20 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
             })
             .then(res => res.json())
             .then(result => {
+                function sumAndRound(a, b) {
+                    return Math.round((a || 0) + (b || 0));
+                }
+                console.log(result,cached)
+                var newact = sumAndRound(result?result.activeTime:0, cached?cached.activeTime:0);
+                var newbckt = sumAndRound(result?result.backgroundTime:0, cached?cached.backgroundTime:0);
+                var updated_data = {
+                    ...result,
+                activeTime:newact,
+                backgroundTime: newbckt,
+            
+                } 
                 chrome.storage.local.set({
-                    [fullUrl]: result
+                    [fullUrl]: updated_data
                 });
                 chrome.storage.local.get(fullUrl, (data) => {
                     const cached = data[fullUrl];

@@ -36,7 +36,7 @@
         "default_title": "recallAi"
     },
     "host_permissions": [
-        "http://*/*",
-        "https://*/*"
+        "http://localhost/*",
+        "http://127.0.0.1/*"
     ]
 }
