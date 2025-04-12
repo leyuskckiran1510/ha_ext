@@ -87,7 +87,7 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
 
 
         const expandBtn = document.createElement("button");
-        expandBtn.innerText = "⛶";
+        expandBtn.innerText = "🗖";
         expandBtn.style.cssText = closeBtn.style.cssText;
         let expanded = false;
         expandBtn.onclick = () => {
@@ -123,11 +123,6 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
         transform: scale(0.98);
         box-shadow: 0 2px 6px rgba(157, 78, 221, 0.3);
       }
-      // .recall_ai_premium_button_no_external.__oov{
-      //   position:sitcky;
-      //   top:0px;
-      //   width:100%;
-      // }
     `;
         document.head.appendChild(premium_style);
 
@@ -203,13 +198,13 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
   `;
 
         let site_is_disabled = false;
-
         disableAction.innerText = "Disable";
         let disable_func = (update) => {
             chrome.storage.sync.get({
                 disabled_sites: []
             }, (result) => {
                 const updatedList = result.disabled_sites;
+                console.log(updatedList)
                 if (!updatedList.includes(fullUrl) && update) {
                     updatedList.push(fullUrl);
                     chrome.storage.sync.set({
@@ -246,6 +241,56 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
   
   `;
         mindAction.innerText = "Mind Map"
+        mindAction.onclick = ()=>{
+            const mapDiv= document.createElement("div");
+            mapDiv.className = "recall_ai_mind_graph";
+        mapDiv.style.cssText = `
+            position: fixed;
+            top: 0vh;
+            right: 0vw;
+            width: max(25vw,350px);
+            height: 90vh;
+            background: linear-gradient(135deg, #1a1a1a, #222);
+            color: #e0e0e0;
+            padding: 15px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            overflow-y: auto;
+            z-index: 999999;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(6px);
+            transition: all 0.3s ease-in-out;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          `;
+          //  <canvas id="graph-canvas"></canvas>
+          const title_div  = document.createElement("div");
+          const title  = document.createElement("div");
+          title.innerText = "Mind Map"; 
+          const closeBtn = document.createElement("button");
+            closeBtn.innerText = "✖";
+            closeBtn.style.cssText = `
+                background: transparent;
+                color: white;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                align-self: end;`;
+            closeBtn.onclick = () => mapDiv.remove();
+          
+          title_div.appendChild(title)
+          title_div.appendChild(closeBtn)
+          mapDiv.appendChild(title_div)
+          const canvas = document.createElement("canvas");
+          canvas.id = "recall_ai_graph_canvas";
+          mapDiv.appendChild(canvas);
+          document.body.appendChild(mapDiv);
+     
+        }
 
         actionButtons.appendChild(discradAction);
         actionButtons.appendChild(disableAction);
@@ -332,10 +377,11 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
         timeBox.style.marginTop = "1rem";
         const active = cached.activeTime ? `${cached.activeTime} sec` : "N/A";
         const background = cached.backgroundTime ? `${cached.backgroundTime} sec` : "N/A";
+        timeBox.className = "recall_ai_time_box";
         timeBox.innerHTML = `
-    <h3>⏱ Activity Time</h3>
-     <p>🟢 Active: ${active}</p>
-     <p>⚫️ Background: ${background}</p>
+                <h3>⏱ Activity Time</h3>
+                 <p>🟢 Active: ${active}</p>
+                 <p>⚫️ Background: ${background}</p>
   `;
         loader.appendChild(timeBox);
 
@@ -361,7 +407,7 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
                 }
             }, {
                 threshold: 0.5
-            } // Trigger when at least 10% is not visible
+            }
         );
 
         observer.observe(target);
@@ -375,6 +421,11 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
         text = fullUrl;
     }
     var __elms = document.querySelectorAll(".quantum-summary-panel");
+    if (__elms.length) {
+        __elms.forEach(x => x.outerHTML = "");
+        return;
+    };
+    var __elms = document.querySelectorAll(".recall_ai_mind_graph");
     if (__elms.length) {
         __elms.forEach(x => x.outerHTML = "");
         return;
@@ -427,71 +478,6 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
             });
     });
 }
-
-
-let activeTabId = null;
-let tabStartTime = null;
-let tabDomain = null;
-let isWindowFocused = true;
-
-function getDomainFromUrl(url) {
-    try {
-        return new URL(url).hostname;
-    } catch (e) {
-        return null;
-    }
-}
-
-function updateTime(active = true) {
-    if (!tabStartTime || !tabDomain) return;
-
-    const timeSpent = Math.floor((Date.now() - tabStartTime) / 1000);
-
-    chrome.storage.local.get([tabDomain], (res) => {
-        const data = res[tabDomain] || {
-            summary: "",
-            notes: [],
-            references: [],
-            activeTime: 0,
-            backgroundTime: 0
-        };
-
-        if (active) data.activeTime += timeSpent;
-        else data.backgroundTime += timeSpent;
-
-        chrome.storage.local.set({
-            [tabDomain]: data
-        });
-    });
-
-    tabStartTime = Date.now();
-}
-
-// track tab change
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    updateTime(isWindowFocused); // save old tab time
-    activeTabId = activeInfo.tabId;
-
-    const tab = await chrome.tabs.get(activeTabId);
-    tabDomain = getDomainFromUrl(tab.url);
-    tabStartTime = Date.now();
-});
-
-// track tab URL change
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tabId === activeTabId && changeInfo.url) {
-        updateTime(isWindowFocused);
-        tabDomain = getDomainFromUrl(changeInfo.url);
-        tabStartTime = Date.now();
-    }
-});
-
-// track window focus/blur
-chrome.windows.onFocusChanged.addListener((windowId) => {
-    const wasFocused = isWindowFocused;
-    isWindowFocused = windowId !== chrome.windows.WINDOW_ID_NONE;
-    if (tabStartTime) updateTime(wasFocused);
-});
 
 
 
