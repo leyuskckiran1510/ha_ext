@@ -120,21 +120,21 @@ const config = {
     nodeSpacing: 20 // minimum spacing between nodes
 };
 
-// Graph data structure
-const sampleData = {
-    "2025-04-10": {
-        "youtube.com": {
-            "https://youtube.com/watch?v=abc": "Qm123...",
-            "https://youtube.com/watch?v=def": "Qm456..."
-        },
-        "awdwad.com": {}
-    },
-    "2025-04-09": {
-        "example.com": {
-            "https://example.com/article": "Qm789..."
-        }
-    }
-};
+// // Graph data structure
+// const sampleData = {
+//     "2025-04-10": {
+//         "youtube.com": {
+//             "https://youtube.com/watch?v=abc": "Qm123...",
+//             "https://youtube.com/watch?v=def": "Qm456..."
+//         },
+//         "awdwad.com": {}
+//     },
+//     "2025-04-09": {
+//         "example.com": {
+//             "https://example.com/article": "Qm789..."
+//         }
+//     }
+// };
 
 
 
@@ -194,7 +194,7 @@ function expandDateNode(dateNode) {
     dateNode.expanded = true;
     expandedNodes.add(dateNode.id);
 
-    const dateData = sampleData[dateNode.id];
+    const dateData =nodeJson[dateNode.id];
     const domainKeys = Object.keys(dateData);
 
     // Calculate positions in a circular pattern
@@ -249,7 +249,7 @@ function expandDomainNode(domainNode) {
     expandedNodes.add(domainNode.id);
 
     const [dateId, domain] = domainNode.id.split(':');
-    const urlData = sampleData[dateId][domain];
+    const urlData =nodeJson[dateId][domain];
     const urlKeys = Object.keys(urlData);
 
     // Calculate positions in a circular pattern
@@ -376,6 +376,28 @@ function findNodeUnderCursor(x, y) {
 }
 
 // Show modal with content
+// function showModal(node) {
+//     const modal = document.getElementById('modal');
+//     const header = document.getElementById('modal-header');
+//     const body = document.getElementById('modal-body');
+
+//     // Extract date and domain from ID
+//     const parts = node.id.split(':');
+//     const url = parts[2];
+//     const domain = parts[1];
+//     const date = parts[0];
+
+//     header.textContent = url;
+//     body.innerHTML = `
+//                 <p><strong>Date:</strong> ${date}</p>
+//                 <p><strong>Domain:</strong> ${domain}</p>
+//                 <p><strong>Content ID:</strong> ${node.contentId}</p>
+//             `;
+
+//     modal.classList.add('active');
+// }
+
+// Show modal with content
 function showModal(node) {
     const modal = document.getElementById('modal');
     const header = document.getElementById('modal-header');
@@ -388,14 +410,54 @@ function showModal(node) {
     const date = parts[0];
 
     header.textContent = url;
-    body.innerHTML = `
-                <p><strong>Date:</strong> ${date}</p>
-                <p><strong>Domain:</strong> ${domain}</p>
-                <p><strong>Content ID:</strong> ${node.contentId}</p>
-            `;
+    console.log("HERE WE GO :",node.contentId,JSON.parse(node.contentId))
+    console.log("----------------------")
+    
+    try {
+        // Parse the JSON string from contentId
+        const summaryData = JSON.parse(node.contentId);
+        console.log(summaryData)
+        
+        // Format the modal content similar to main summary panel
+        body.innerHTML = `
+            <h2 style="margin-bottom: 0.5rem;">📄 Summary</h2>
+            <p>${summaryData.summary || "No summary available."}</p>
+            
+            <h3>📝 Notes</h3>
+            <ul>
+                ${(summaryData.notes || []).map(note => `<li style="list-style: disc; margin-left: 1rem;">${note}</li>`).join('')}
+            </ul>
+            
+            <h3>🔗 References</h3>
+            <ul>
+                ${(summaryData.references || []).map(ref => 
+                    `<li style="list-style: disc; margin-left: 1rem;">
+                        <a href="${ref.link}" target="_blank" style="color: #4ea1ff;">${ref.name}</a>
+                    </li>`
+                ).join('')}
+            </ul>
+            
+            ${summaryData.activeTime || summaryData.backgroundTime ? 
+                `<div style="margin-top: 1rem;">
+                    <h3>⏱ Activity Time</h3>
+                    <p>🟢 Active: ${summaryData.activeTime ? `${summaryData.activeTime} sec` : 'N/A'}</p>
+                    <p>⚫️ Background: ${summaryData.backgroundTime ? `${summaryData.backgroundTime} sec` : 'N/A'}</p>
+                </div>` : ''}
+        `;
+    } catch (e) {
+        // Handle the case where contentId is not valid JSON
+        body.innerHTML = `
+            <p><strong>Date:</strong> ${date}</p>
+            <p><strong>Domain:</strong> ${domain}</p>
+            <p><strong>URL:</strong> ${url}</p>
+            <p><em>Summary data could not be loaded.</em></p>
+        `;
+        console.error("Error parsing summary data:", e);
+    }
 
     modal.classList.add('active');
 }
+
 
 // Close modal
 function closeModal() {
@@ -864,7 +926,11 @@ recall_ai_looper = ()=>{
 
 recall_ai_looper();
 
+
+
 mind_fetcher_looper=()=>{
+    console.log("NODE JSON ",nodeJson);
+    console.log("BACKEND _URL ",backend_url,"BACKEND TOKEN ",backend_token);
     if(nodeJson) return;
     else if(backend_url && backend_token){
         fetch(`${backend_url}/fetch_user_history`, {
@@ -884,5 +950,6 @@ mind_fetcher_looper=()=>{
     setTimeout(()=>{mind_fetcher_looper()},1000);
 
 }
-
+console.log("CALLING MIND FETCHER LOOPER ")
+console.log("NODE JSON BEFORE " , nodeJson)
 mind_fetcher_looper()

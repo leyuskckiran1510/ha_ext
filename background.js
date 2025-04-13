@@ -97,6 +97,9 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
         };
 
         const premiumBtn = document.createElement("button");
+        premiumBtn.addEventListener("click", () => {
+            window.open("http://localhost:5000", "_blank");
+          });
         premiumBtn.className = "recall_ai_premium_button_no_external"
         premiumBtn.id = "watchedDiv";
         premiumBtn.innerText = "💎 Premium"
