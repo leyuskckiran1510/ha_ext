@@ -79,8 +79,12 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
         const closeBtn = document.createElement("button");
         closeBtn.innerText = "✖";
         closeBtn.style.cssText = `
-    background: transparent; color: white;
-    border: none; font-size: 20px; cursor: pointer;
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            align-self: end;
   `;
         closeBtn.onclick = () => loader.remove();
 
