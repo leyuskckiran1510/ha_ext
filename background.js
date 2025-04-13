@@ -485,7 +485,6 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
         const cached = data[fullUrl];
 
         if (cached && cached.summary && cached.summary.length>0) {
-            console.log(cached)
             site_is_disabled = render_summary(loader, cached) < 0;
             return;
         }
@@ -565,6 +564,13 @@ chrome.action.onClicked.addListener((tab) => {
                 },
                 func: summarizeInPage,
                 args: [BACKEND_URL, token, SPECIAL_DOMAINS]
+            });
+
+            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    type: "JWT_TOKEN",
+                    payload: {api:BACKEND_URL,token:token}
+                });
             });
         });
     }

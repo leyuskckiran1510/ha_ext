@@ -4,7 +4,24 @@ let backgroundStartTime = null;
 let activeTime = 0;
 let backgroundTime = 0;
 
+
+let backend_url = null;
+let backend_token = null;
+let nodeJson = null;
+
 const pageKey = window.location.href;
+
+
+
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (message.type === "JWT_TOKEN") {
+        if(message.payload){
+            backend_url=message.payload.api;
+            backend_token=message.payload.token;
+        }
+    }
+});
+
 
 function startActiveTimer() {
     if (!activeStartTime) activeStartTime = Date.now();
@@ -827,21 +844,6 @@ function setupCanvas() {
 
 // Initialize everything
 function recall_init_graph() {
-const sample = {
-        "2025-04-10": {
-            "youtube.com": {
-                "https://youtube.com/watch?v=abc": "Qm123...",
-                "https://youtube.com/watch?v=def": "Qm456..."
-            },
-            "awdwad.com": {}
-        },
-        "2025-04-09": {
-            "example.com": {
-                "https://example.com/article": "Qm789..."
-            }
-        }
-    };
-    const nodeJson = sample;  
     setupCanvas();
     initializeGraph(nodeJson);
     setupEventHandlers();
@@ -856,7 +858,31 @@ recall_ai_looper = ()=>{
         setTimeout(()=>{recall_ai_looper()},300);
         return;
       }
+      console.log(nodeJson);
       recall_graph_code_base();
 }
 
 recall_ai_looper();
+
+mind_fetcher_looper=()=>{
+    if(nodeJson) return;
+    else if(backend_url && backend_token){
+        fetch(`${backend_url}/fetch_user_history`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${backend_token}`
+                },
+            })
+            .then(res => res.json())
+            .then(res=>nodeJson=res)
+            .catch(err=>{
+                console.log("Failed fetching history",err);
+            });
+
+    }
+    setTimeout(()=>{mind_fetcher_looper()},1000);
+
+}
+
+mind_fetcher_looper()
