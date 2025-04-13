@@ -84,7 +84,6 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
             border: none;
             font-size: 20px;
             cursor: pointer;
-            align-self: end;
   `;
         closeBtn.onclick = () => loader.remove();
 
@@ -92,7 +91,14 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
 
         const expandBtn = document.createElement("button");
         expandBtn.innerText = "🗖";
-        expandBtn.style.cssText = closeBtn.style.cssText;
+        expandBtn.style.cssText = `
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            align-self: end;
+  `;;
         let expanded = false;
         expandBtn.onclick = () => {
             expanded = !expanded;
