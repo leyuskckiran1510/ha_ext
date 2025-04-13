@@ -77,7 +77,7 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
   `;
 
         const closeBtn = document.createElement("button");
-        closeBtn.innerText = "✖";
+        closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x MuiBox-root popup-css-10s948j"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>`;
         closeBtn.style.cssText = `
             background: transparent;
             color: white;
@@ -90,20 +90,20 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
 
 
         const expandBtn = document.createElement("button");
-        expandBtn.innerText = "🗖";
+        expandBtn.innerHTML = `
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-maximize2 MuiBox-root popup-css-10s948j"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" x2="14" y1="3" y2="10"></line><line x1="3" x2="10" y1="21" y2="14"></line></svg>
+        `;
         expandBtn.style.cssText = `
             background: transparent;
             color: white;
             border: none;
             font-size: 20px;
             cursor: pointer;
-            align-self: end;
   `;;
         let expanded = false;
         expandBtn.onclick = () => {
             expanded = !expanded;
             loader.style.width = expanded ? "80vw" : "25vw";
-            expandBtn.innerText = expanded ? "🗗" : "🗖";
         };
 
         const premiumBtn = document.createElement("button");
@@ -198,49 +198,6 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
                 })
             });
         }
-
-  //       const disableAction = document.createElement("button");
-  //       disableAction.style.cssText = `
-  //  flex: 1;
-  //  background: #444;
-  //  color: white;
-  //  border: none;
-  //  border-radius: 20px;
-  //  padding: 10px;
-  //  cursor: pointer;
-  // `;
-
-  //       let site_is_disabled = false;
-  //       disableAction.innerText = "Disable";
-  //       let disable_func = (update) => {
-  //           chrome.storage.sync.get({
-  //               disabled_sites: []
-  //           }, (result) => {
-  //               const updatedList = result.disabled_sites;
-  //               if (!updatedList.includes(fullUrl) && update) {
-  //                   updatedList.push(fullUrl);
-  //                   chrome.storage.sync.set({
-  //                       disabled_sites: updatedList
-  //                   }, () => {
-  //                       disableAction.innerText = "Enable";
-  //                       site_is_disabled = true;
-  //                   });
-  //               } else if (updatedList.includes(fullUrl) && update) {
-  //                   updatedList.pop(updatedList.indexOf(fullUrl));
-  //                   disableAction.innerText = "Disable";
-  //                   site_is_disabled = false;
-  //               } else if (updatedList.includes(fullUrl)) {
-  //                   disableAction.innerText = "Enable";
-  //                   site_is_disabled = true;
-  //               }
-  //           });
-  //       }
-
-  //       disable_func(0);
-  //       disableAction.onclick = () => {
-  //           disable_func(1);
-  //       };
-
         const mindAction = document.createElement("button");
         mindAction.style.cssText = `
     flex: 1;
@@ -279,7 +236,6 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
             scrollbar-width: none;
             -ms-overflow-style: none;
           `;
-          //  <canvas id="graph-canvas"></canvas>
           const title_div  = document.createElement("div");
           title_div.style.cssText =`
     display: flex;
@@ -306,6 +262,8 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
           title_div.appendChild(title)
           title_div.appendChild(closeBtn)
           mapDiv.appendChild(title_div)
+
+          //  <canvas id="graph-canvas"></canvas>
           const canvas = document.createElement("canvas");
           canvas.style.cssText=`
             flex: 1;
@@ -342,16 +300,24 @@ function summarizeInPage(BACKEND_URL, jwt, SPECIAL_DOMAINS) {
     <div class="tooltip" id="tooltip"></div>
           `;
           mapDiv.appendChild(random_div);
+
+          const whole_day_button = document.createElement("button");
+          whole_day_button.className = "recall_ai_whole_day_summary";
+          whole_day_button.style.cssText = `            
+        width: auto;
+        height: 5vh;
+        padding:1rem;
+        align-self: anchor-center;
+          `;
+          whole_day_button.innerText = "summarize my day"
           mapDiv.appendChild(canvas);
+          mapDiv.appendChild(whole_day_button);
           document.body.appendChild(mapDiv);
         
         }
 
         actionButtons.appendChild(discradAction);
-        // actionButtons.appendChild(disableAction);
         actionButtons.appendChild(mindAction);
-
-
 
         loader.appendChild(controls);
 
